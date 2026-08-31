@@ -12,7 +12,6 @@ const CHANNELS = [
     "avalanche_1",
     "pajotreq",
     "dionizeuus",
-    "bananekk",
     "johnnybl4ze",
 
 // ===================================================
