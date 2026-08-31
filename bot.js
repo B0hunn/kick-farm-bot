@@ -13,6 +13,7 @@ const CHANNELS = [
     "pajotreq",
     "dionizeuus",
     "johnnybl4ze",
+    ];
 
 // ===================================================
 // TWÓJ TOKEN KICK_SESSION
