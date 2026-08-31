@@ -7,26 +7,13 @@ const CHANNELS = [
     "maxigashi",
     "mabaxu",
     "chylek",
-    "lvndmark",
     "slowek",
-    "punio",
-    "cashnalot",
     "mnichglaukos",
-    "yuukicia",
     "avalanche_1",
     "pajotreq",
     "dionizeuus",
-    "daskicosin",
     "bananekk",
     "johnnybl4ze",
-    "wariatp2w",
-    "kusnier",
-    "nataliewayne",
-    "averocker",
-    "sabal",
-    "matys_q",
-    "szczurigra"
-];
 
 // ===================================================
 // TWÓJ TOKEN KICK_SESSION
