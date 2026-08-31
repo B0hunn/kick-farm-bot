@@ -1,71 +1,63 @@
 const WebSocket = require('ws');
 
-// ===================================================
-// LISTA STREAMERÓW (22 KANAŁY Z TWOJEJ LISTY)
-// ===================================================
-const CHANNELS = [
+const PRIORITY_CHANNELS = [
     "maxigashi",
     "mabaxu",
-    "chylek",
     "slowek",
-    "mnichglaukos",
+    "chylek",
     "avalanche_1",
-    "pajotreq",
     "dionizeuus",
     "johnnybl4ze",
-    ];
+    
+];
 
-// ===================================================
-// TWÓJ TOKEN KICK_SESSION
-// ===================================================
-const KICK_SESSION = "eyJpdiI6IktjNkhMakFnUDV0bEg5VkFMb1VaMlE9PSIsInZhbHVlIjoiYXRqS3N1clVVZmh4NnloRUJEVW5IcUF4TGFMWElOSG5sbDMzdDNMYjF1WDJrUDNnRng5dGgyUkprZnpjREtTRzluWDFvQTM3ZDJ5YmVydEJqUktzMXlMU0FVRUxxcTJkOTd0ZHc2M1p2WUdCT3cxeCtnOGRwMWkwZ25BNnBZVWkiLCJtYWMiOiIyYWIyMTUzMmRhNGY5ZDNlMmMyNWI5NDcxZjE1MDQ4NWFhZmQ4ZTg0YjJkNTBlNGZkZTdlNzlmZWUxZmU5MWI1IiwidGFnIjoiIn0%3D";
+const KICK_SESSION = "eyJpdiI6IkNnVWlCcERxTlUvcEU2cUIzd2JkTVE9PSIsInZhbHVlIjoiUzFiRHFXd0JaMEhxcU9BcHBEQldmTUZpeVdJNVRYLzhFTmlSTTEweGxjOWF0VWVvcWJuZXNJd0V4Y3lEWGFvWVc0WlNHbkF6VHlKYkhUdDhxN2NiRllHOEJCVGVVRVhyUG1Cakc3Q2J6d3VhV2tTS0dWQ21USjJJTWpQWVZPeC8iLCJtYWMiOiJhOGNjZjliYzhkZjAzZWI5YjJjYTI0YjFmMWVlMmEzNzBkYWI3MmMwMGMzMGFhNzc5YzhkZWMzYjQxMDQ4ZTNkIiwidGFnIjoiIn0%3D";
 
 console.log("==================================================");
-console.log(`Uruchamianie bota w chmurze dla ${CHANNELS.length} kanałów...`);
+console.log(` Uruchamianie bota dla ${PRIORITY_CHANNELS.length} kanałów...`);
 console.log("==================================================");
 
 function connectToChannel(channelName, index) {
-    // Odstęp 800 ms pomiędzy łączeniem do kolejnych kanałów
-    setTimeout(() => {
-        const ws = new WebSocket('wss://ws-us2.pusher.com/app/eb1d5f2ebd866628b727?protocol=7&client=js&version=7.4.0&flash=false', {
-            headers: {
-                'Cookie': `kick_session=${KICK_SESSION};`,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            }
-        });
+    const ws = new WebSocket('wss://ws-us2.pusher.com/app/eb1d5f2ebd866628b727?protocol=7&client=js&version=7.4.0&flash=false', {
+        headers: {
+            'Cookie': `kick_session=${KICK_SESSION};`,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Origin': 'https://kick.com'
+        }
+    });
 
-        ws.on('open', () => {
-            console.log(`[+] DOŁĄCZONO (${index + 1}/${CHANNELS.length}): ${channelName}`);
+    ws.on('open', () => {
+        console.log(`[+] POŁĄCZONO (${index + 1}/${PRIORITY_CHANNELS.length}): ${channelName}`);
+        
+        // Subskrypcja ogólna channel
+        ws.send(JSON.stringify({
+            event: "pusher:subscribe",
+            data: { auth: "", channel: `channel.${channelName}` }
+        }));
+    });
+
+    ws.on('message', (data) => {
+        try {
+            const payload = JSON.parse(data.toString());
             
-            // Subskrypcja czatu bota
-            const subscribePayload = JSON.stringify({
-                event: "pusher:subscribe",
-                data: {
-                    auth: "",
-                    channel: `chatrooms.${channelName}.v2`
-                }
-            });
-            ws.send(subscribePayload);
-        });
-
-        // Wysyłanie pingu co 30 sekund (utrzymanie obecności i zbieranie punktów)
-        const pingInterval = setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ event: "pusher:ping", data: {} }));
+            if (payload.event === 'pusher:ping') {
+                ws.send(JSON.stringify({ event: 'pusher:pong', data: {} }));
+                const now = new Date().toLocaleTimeString('pl-PL');
+                console.log(`[PONG ${now}] Utrzymano sesję dla: ${channelName}`);
             }
-        }, 30000);
+        } catch (e) {}
+    });
 
-        ws.on('close', () => {
-            console.log(`[-] ROZŁĄCZONO: ${channelName}. Ponowne łączenie za 15 sekund...`);
-            clearInterval(pingInterval);
-            setTimeout(() => connectToChannel(channelName, index), 15000);
-        });
+    ws.on('close', (code) => {
+        console.log(`[-] ROZŁĄCZONO: ${channelName} (kod: ${code}). Reconnect za 15s...`);
+        setTimeout(() => connectToChannel(channelName, index), 15000);
+    });
 
-        ws.on('error', (err) => {
-            console.error(`[!] BŁĄD [${channelName}]:`, err.message);
-        });
-    }, index * 800);
+    ws.on('error', () => {});
 }
 
-// Uruchomienie bota dla wszystkich kanałów
-CHANNELS.forEach((channel, index) => connectToChannel(channel, index));
+PRIORITY_CHANNELS.forEach((channel, index) => {
+    setTimeout(() => {
+        connectToChannel(channel, index);
+    }, index * 3000);
+});
